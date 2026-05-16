@@ -1,0 +1,20 @@
+{
+  "name": "@wuweiweave/ui-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./src/server/server.ts"
+  },
+  "scripts": {
+    "dev": "bun run build && bun run src/server/server.ts",
+    "build": "bun run scripts/build-client.ts",
+    "typecheck": "tsc -p ../../tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@wuweiweave/core": "workspace:*",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

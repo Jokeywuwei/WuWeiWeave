@@ -1,0 +1,16 @@
+{
+  "name": "@wuweiweave/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ../../tsconfig.json --noEmit",
+    "test": "bun test ./test"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.13"
+  }
+}

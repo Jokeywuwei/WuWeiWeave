@@ -1,0 +1,42 @@
+name: integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  bun:
+    name: bun validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run build
+      - run: bun run smoke
+      - run: bun run smoke:product
+      - run: bun run smoke:reliability
+      - run: bun run smoke:operations
+      - run: bun run smoke:acceptance
+
+  docker-runtime:
+    name: docker runtime matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime-tag:
+          - wuweiweave/solver-runtime:ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run smoke:docker ${{ matrix.runtime-tag }}
