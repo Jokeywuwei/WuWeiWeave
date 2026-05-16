@@ -242,7 +242,7 @@ Phase 5 adds long-running operational behavior while keeping file-system persist
 - Recovery policy: `host.recovery` controls retry backoff, terminal failure, worker heartbeat timeout, stuck worker timeout, and dead-letter storage.
 - Dead-letter queue: terminal scheduler failures are stored under `runtime/dead-letter-tasks.json` and exposed in the Scheduler page.
 - Persisted provider metrics: provider token/cost usage is appended to `runtime/provider-usage.jsonl` and aggregated by provider, model, solver, challenge, and time window.
-- CI integration: `.github/workflows/integration.yml` runs Bun validation and Docker runtime smoke on Docker-capable GitHub runners.
+- CI-ready scripts: Bun validation and Docker runtime smoke can run on Docker-capable CI runners. Adding a GitHub Actions workflow requires a token with `workflow` scope.
 
 Useful operations endpoints:
 

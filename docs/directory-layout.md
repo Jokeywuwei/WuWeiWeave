@@ -35,9 +35,3 @@ scripts
 ```
 
 Operational scripts for bootstrapping state, smoke validation, reliability/operations validation, worker supervision, and building/verifying the Docker runtime image.
-
-```text
-.github/workflows
-```
-
-CI-ready Bun and Docker integration validation.

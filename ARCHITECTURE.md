@@ -164,9 +164,10 @@ Phase 5 turns reliability primitives into long-running operations surfaces.
 - `getProviderMetricsSnapshot` aggregates by provider, model, solver, challenge, and optional time window.
 - Observability includes both event-derived usage and durable metrics.
 
-`CI integration`
+`CI readiness`
 
-- `.github/workflows/integration.yml` runs typecheck, tests, build, smoke, product smoke, reliability smoke, operations smoke, and Docker runtime smoke.
+- The repository scripts cover typecheck, tests, build, smoke, product smoke, reliability smoke, operations smoke, acceptance smoke, and Docker runtime smoke.
+- A GitHub Actions workflow can be added with a token that has `workflow` scope.
 
 ## Phase 5.5 Acceptance
 
