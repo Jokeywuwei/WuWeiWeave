@@ -56,10 +56,24 @@ export class ConfigManager {
     }));
   }
 
+  async replaceProvider(previousId: string, provider: ProviderConfig): Promise<SystemConfig> {
+    return this.updateConfig((config) => ({
+      ...config,
+      providers: replaceById(config.providers, previousId, sanitizeProviderForStorage(provider, config.providers.find((candidate) => candidate.id === previousId)))
+    }));
+  }
+
   async upsertModel(model: ModelConfig): Promise<SystemConfig> {
     return this.updateConfig((config) => ({
       ...config,
       models: upsert(config.models, model)
+    }));
+  }
+
+  async replaceModel(previousId: string, model: ModelConfig): Promise<SystemConfig> {
+    return this.updateConfig((config) => ({
+      ...config,
+      models: replaceById(config.models, previousId, model)
     }));
   }
 
@@ -68,6 +82,14 @@ export class ConfigManager {
     return this.updateConfig((config) => ({
       ...config,
       prompts: upsert(config.prompts, prompt)
+    }));
+  }
+
+  async replacePrompt(previousId: string, prompt: PromptConfig): Promise<SystemConfig> {
+    await this.store.writeJson(`config/prompts/${prompt.id}.json`, prompt);
+    return this.updateConfig((config) => ({
+      ...config,
+      prompts: replaceById(config.prompts, previousId, prompt)
     }));
   }
 
@@ -90,6 +112,13 @@ export class ConfigManager {
     return this.updateConfig((config) => ({
       ...config,
       mcpServers: upsert(config.mcpServers, server)
+    }));
+  }
+
+  async replaceMcpServer(previousId: string, server: McpServerConfig): Promise<SystemConfig> {
+    return this.updateConfig((config) => ({
+      ...config,
+      mcpServers: replaceById(config.mcpServers, previousId, server)
     }));
   }
 
@@ -357,6 +386,16 @@ function upsert<T extends { id: string }>(items: T[], item: T): T[] {
   }
 
   return items.map((candidate) => (candidate.id === item.id ? item : candidate));
+}
+
+function replaceById<T extends { id: string }>(items: T[], previousId: string, item: T): T[] {
+  const index = items.findIndex((candidate) => candidate.id === previousId);
+  if (index === -1) {
+    return upsert(items, item);
+  }
+
+  const withoutPreviousOrNext = items.filter((candidate) => candidate.id !== previousId && candidate.id !== item.id);
+  return [...withoutPreviousOrNext.slice(0, index), item, ...withoutPreviousOrNext.slice(index)];
 }
 
 function upsertProvider(providers: ProviderConfig[], provider: ProviderConfig): ProviderConfig[] {

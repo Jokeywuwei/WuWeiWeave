@@ -105,9 +105,19 @@ async function handleConfigRequest(
     return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertPrompt(body)));
   }
 
+  if (request.method === "PUT" && section === "prompts" && segments[3]) {
+    const body = await readJsonBody<PromptConfig>(request);
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.replacePrompt(segments[3], body)));
+  }
+
   if (request.method === "POST" && section === "providers") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertProvider>[0]>(request);
     return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertProvider(body)));
+  }
+
+  if (request.method === "PUT" && section === "providers" && segments[3]) {
+    const body = await readJsonBody<ProviderConfig>(request);
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.replaceProvider(segments[3], body)));
   }
 
   if (request.method === "POST" && section === "provider-test") {
@@ -125,6 +135,11 @@ async function handleConfigRequest(
     return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertModel(body)));
   }
 
+  if (request.method === "PUT" && section === "models" && segments[3]) {
+    const body = await readJsonBody<ModelConfig>(request);
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.replaceModel(segments[3], body)));
+  }
+
   if (request.method === "POST" && section === "tools") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertTool>[0]>(request);
     return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertTool(body)));
@@ -133,6 +148,11 @@ async function handleConfigRequest(
   if (request.method === "POST" && section === "mcp") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertMcpServer>[0]>(request);
     return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertMcpServer(body)));
+  }
+
+  if (request.method === "PUT" && section === "mcp" && segments[3]) {
+    const body = await readJsonBody<Parameters<typeof daemon.config.upsertMcpServer>[0]>(request);
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.replaceMcpServer(segments[3], body)));
   }
 
   if (request.method === "POST" && section === "mcp-discover") {

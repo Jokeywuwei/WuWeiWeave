@@ -40,6 +40,22 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function putJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return (await response.json()) as T;
+}
+
 export const api = {
   dashboard: () => getJson<DashboardState>("/api/dashboard"),
   observability: () => getJson<ObservabilitySnapshot>("/api/observability"),
@@ -47,9 +63,13 @@ export const api = {
     getJson<ProviderMetricsSummary>(windowMs ? `/api/observability/metrics?windowMs=${windowMs}` : "/api/observability/metrics"),
   config: () => getJson<SystemConfig>("/api/config"),
   upsertProvider: (body: ProviderConfig) => postJson<SystemConfig>("/api/config/providers", body),
+  replaceProvider: (previousId: string, body: ProviderConfig) => putJson<SystemConfig>(`/api/config/providers/${previousId}`, body),
   upsertModel: (body: ModelConfig) => postJson<SystemConfig>("/api/config/models", body),
+  replaceModel: (previousId: string, body: ModelConfig) => putJson<SystemConfig>(`/api/config/models/${previousId}`, body),
   upsertPrompt: (body: PromptConfig) => postJson<SystemConfig>("/api/config/prompts", body),
+  replacePrompt: (previousId: string, body: PromptConfig) => putJson<SystemConfig>(`/api/config/prompts/${previousId}`, body),
   upsertMcpServer: (body: McpServerConfig) => postJson<SystemConfig>("/api/config/mcp", body),
+  replaceMcpServer: (previousId: string, body: McpServerConfig) => putJson<SystemConfig>(`/api/config/mcp/${previousId}`, body),
   discoverMcp: (serverId?: string) =>
     postJson<unknown>(serverId ? `/api/config/mcp-discover/${serverId}` : "/api/config/mcp-discover", {}),
   refreshStaleMcp: () => postJson<unknown>("/api/config/mcp-refresh-stale", {}),

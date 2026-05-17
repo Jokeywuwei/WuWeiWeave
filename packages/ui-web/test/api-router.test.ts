@@ -45,4 +45,43 @@ describe("Web API config responses", () => {
     expect(providersProvider?.hasApiKey).toBe(true);
     expect(providersProvider?.maskedApiKey).toBe("********3456");
   });
+
+  it("replaces config items by previous id and preserves stored provider keys", async () => {
+    cleanupPath = await mkdtemp(path.join(os.tmpdir(), "wuweiweave-ui-api-"));
+    const daemon = await createDefaultDaemon(cleanupPath);
+    const config = await daemon.config.getConfig();
+    const provider = config.providers.find((candidate) => candidate.id === "openai");
+    if (!provider) {
+      throw new Error("openai provider missing");
+    }
+
+    await daemon.config.upsertProvider({
+      ...provider,
+      apiKey: "sk-preserved-secret"
+    });
+
+    const response = await handleApiRequest(
+      new Request("http://localhost/api/config/providers/openai", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...provider,
+          id: "relay-openai",
+          name: "Relay OpenAI",
+          hasApiKey: true,
+          maskedApiKey: "********cret"
+        })
+      }),
+      daemon
+    );
+    const body = (await response.json()) as { providers: Array<Record<string, unknown>> };
+
+    expect(body.providers.some((candidate) => candidate.id === "openai")).toBe(false);
+    expect(body.providers.some((candidate) => candidate.id === "relay-openai")).toBe(true);
+    expect(body.providers.find((candidate) => candidate.id === "relay-openai")?.apiKey).toBeUndefined();
+
+    const stored = await daemon.config.getConfig();
+    const storedProvider = stored.providers.find((candidate) => candidate.id === "relay-openai");
+    expect(storedProvider?.apiKey).toBe("sk-preserved-secret");
+  });
 });
