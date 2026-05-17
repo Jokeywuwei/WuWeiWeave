@@ -52,7 +52,7 @@ export class ConfigManager {
   async upsertProvider(provider: ProviderConfig): Promise<SystemConfig> {
     return this.updateConfig((config) => ({
       ...config,
-      providers: upsert(config.providers, provider)
+      providers: upsertProvider(config.providers, provider)
     }));
   }
 
@@ -190,7 +190,8 @@ export class ConfigManager {
       type: "openai",
       enabled: false,
       baseUrl: "https://api.openai.com/v1",
-      apiKeyEnv: "OPENAI_API_KEY"
+      apiKeyEnv: "OPENAI_API_KEY",
+      defaultModelId: "gpt-5.4"
     };
     const model: ModelConfig = {
       id: "local-planner",
@@ -201,15 +202,35 @@ export class ConfigManager {
       supportsTools: true,
       defaultThinking: "medium"
     };
-    const openAiModel: ModelConfig = {
-      id: "gpt-4.1-mini",
-      providerId: openAiProvider.id,
-      displayName: "GPT-4.1 mini",
-      modelName: "gpt-4.1-mini",
-      contextWindow: 1047576,
-      supportsTools: true,
-      defaultThinking: "medium"
-    };
+    const openAiModels: ModelConfig[] = [
+      {
+        id: "gpt-5.4",
+        providerId: openAiProvider.id,
+        displayName: "GPT-5.4",
+        modelName: "gpt-5.4",
+        contextWindow: 1047576,
+        supportsTools: true,
+        defaultThinking: "medium"
+      },
+      {
+        id: "gpt-5.4-mini",
+        providerId: openAiProvider.id,
+        displayName: "GPT-5.4 mini",
+        modelName: "gpt-5.4-mini",
+        contextWindow: 1047576,
+        supportsTools: true,
+        defaultThinking: "medium"
+      },
+      {
+        id: "gpt-5.5",
+        providerId: openAiProvider.id,
+        displayName: "GPT-5.5",
+        modelName: "gpt-5.5",
+        contextWindow: 1047576,
+        supportsTools: true,
+        defaultThinking: "high"
+      }
+    ];
     const tools = createDefaultToolConfigs();
     const prompts: PromptConfig[] = [
       {
@@ -255,7 +276,7 @@ export class ConfigManager {
 
     return {
       providers: [provider, openAiProvider],
-      models: [model, openAiModel],
+      models: [model, ...openAiModels],
       prompts,
       skills: [
         {
@@ -336,6 +357,26 @@ function upsert<T extends { id: string }>(items: T[], item: T): T[] {
   }
 
   return items.map((candidate) => (candidate.id === item.id ? item : candidate));
+}
+
+function upsertProvider(providers: ProviderConfig[], provider: ProviderConfig): ProviderConfig[] {
+  const existing = providers.find((candidate) => candidate.id === provider.id);
+  const sanitized = sanitizeProviderForStorage(provider, existing);
+  return upsert(providers, sanitized);
+}
+
+function sanitizeProviderForStorage(provider: ProviderConfig, existing?: ProviderConfig): ProviderConfig {
+  const { hasApiKey: _hasApiKey, maskedApiKey: _maskedApiKey, ...rest } = provider;
+  const next: ProviderConfig = { ...rest };
+  if (provider.apiKey === undefined && existing?.apiKey) {
+    next.apiKey = existing.apiKey;
+  }
+
+  if (provider.apiKey !== undefined && provider.apiKey.trim().length === 0) {
+    delete next.apiKey;
+  }
+
+  return next;
 }
 
 function normalizeConfig(config: Partial<SystemConfig>, defaults: SystemConfig): SystemConfig {

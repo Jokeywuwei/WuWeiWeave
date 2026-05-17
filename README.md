@@ -164,14 +164,21 @@ To use a real OpenAI-compatible model:
 
 1. Edit `~/.wuweiweave/config/system.json`.
 2. Set provider `openai.enabled` to `true`.
-3. Set `solver-default.modelId` to `gpt-4.1-mini`, or add another model entry and point the prompt to it.
-4. Export the API key:
+3. Choose one of the seeded OpenAI-compatible models such as `gpt-5.4`, `gpt-5.4-mini`, or `gpt-5.5`, or add any custom `modelName`.
+4. Configure the API key in the Web Providers page, or export the configured fallback environment variable:
 
 ```bash
 OPENAI_API_KEY=... bun run cli -- solver "Run real model solver" --prompt solver-default
 ```
 
 Custom OpenAI-compatible providers can set `baseUrl` and `apiKeyEnv` in the provider config.
+
+Provider credentials are resolved in this order:
+
+1. `provider.apiKey`, editable from the Web Providers page
+2. `provider.apiKeyEnv`, read from the process environment
+
+Config API responses never include the full key; they expose `hasApiKey` and `maskedApiKey` for display.
 
 ## Tool Dispatcher
 

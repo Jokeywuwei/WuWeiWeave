@@ -127,28 +127,31 @@ async function runOpenAiCompatibleProvider(
   request: ModelRunRequest
 ): Promise<ModelRunResult> {
   const baseUrl = provider.baseUrl ?? "https://api.openai.com/v1";
-  const apiKeyEnv = provider.apiKeyEnv ?? "OPENAI_API_KEY";
-  const apiKey = Bun.env[apiKeyEnv];
-  if (!apiKey) {
-    throw new Error(`Missing API key environment variable: ${apiKeyEnv}`);
+  const apiKey = resolveProviderApiKey(provider);
+
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: model.modelName ?? model.id,
+        messages: request.messages.map(toOpenAiMessage),
+        tools: request.tools.map(toOpenAiTool),
+        tool_choice: "auto"
+      })
+    });
+  } catch (error) {
+    throw new Error(
+      `Provider ${provider.id} baseUrl is unreachable: ${error instanceof Error ? error.message : "network request failed"}`
+    );
   }
 
-  const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: model.modelName ?? model.id,
-      messages: request.messages.map(toOpenAiMessage),
-      tools: request.tools.map(toOpenAiTool),
-      tool_choice: "auto"
-    })
-  });
-
   if (!response.ok) {
-    throw new Error(`Provider ${provider.id} failed: ${response.status} ${await response.text()}`);
+    throw new Error(formatProviderHttpError(provider.id, response.status, await response.text()));
   }
 
   const raw = (await response.json()) as OpenAiChatResponse;
@@ -172,6 +175,37 @@ async function runOpenAiCompatibleProvider(
       )
     }
   };
+}
+
+export function resolveProviderApiKey(provider: ProviderConfig): string {
+  const configuredKey = provider.apiKey?.trim();
+  if (configuredKey) {
+    return configuredKey;
+  }
+
+  const apiKeyEnv = provider.apiKeyEnv ?? "OPENAI_API_KEY";
+  const envKey = Bun.env[apiKeyEnv]?.trim();
+  if (envKey) {
+    return envKey;
+  }
+
+  throw new Error(`Provider ${provider.id} is missing API key. Configure apiKey in Web or set ${apiKeyEnv}.`);
+}
+
+function formatProviderHttpError(providerId: string, status: number, body: string): string {
+  if (status === 401 || status === 403) {
+    return `Provider ${providerId} authentication failed (${status}). Check API Key. ${body}`;
+  }
+
+  if (status === 404) {
+    return `Provider ${providerId} model or endpoint was not found (${status}). Check baseUrl and model id. ${body}`;
+  }
+
+  if (status === 400 && /model/i.test(body)) {
+    return `Provider ${providerId} rejected the model request (${status}). Check model id. ${body}`;
+  }
+
+  return `Provider ${providerId} failed: ${status} ${body}`;
 }
 
 function estimateUsage(provider: ProviderConfig, model: ModelConfig, input: string, output: string): ProviderUsage {

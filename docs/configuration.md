@@ -43,7 +43,14 @@ The seeded OpenAI-compatible provider is disabled by default:
 }
 ```
 
-Enable it, point a prompt at one of its models, and export the configured API key environment variable before starting a solver.
+Enable it, choose a model such as `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.5`, or any custom `modelName`, and configure credentials before starting a solver.
+
+Provider credentials are resolved in this order:
+
+1. `provider.apiKey`, saved from the Web Providers page
+2. `provider.apiKeyEnv`, read from the process environment
+
+Config API responses are masked and do not return the full API key. They expose `hasApiKey` and `maskedApiKey` for display.
 
 Provider smoke is intentionally opt-in:
 

@@ -43,7 +43,7 @@ export function ConfigPage({ config, onRefresh }: ConfigPageProps) {
       ) : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_520px]">
         <div className="grid gap-4">
-          <ConfigTable title={t("config.providers")} rows={config.providers.map((item) => [item.id, item.name, item.type, item.enabled ? t("common.enabled") : t("common.off")])} />
+          <ConfigTable title={t("config.providers")} rows={config.providers.map((item) => [item.id, item.name, item.enabled ? t("common.enabled") : t("common.off"), providerKeyLabel(item, t)])} />
           <ConfigTable title={t("config.models")} rows={config.models.map((item) => [item.id, item.providerId, item.displayName, item.defaultThinking])} />
           <ConfigTable title={t("config.prompts")} rows={config.prompts.map((item) => [item.id, item.role, item.modelId, item.thinking])} />
           <ConfigTable title={t("config.mcp")} rows={config.mcpServers.map((item) => [item.id, item.name, item.command, item.enabled ? t("common.enabled") : t("common.off")])} />
@@ -54,7 +54,9 @@ export function ConfigPage({ config, onRefresh }: ConfigPageProps) {
                 <div key={provider.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                   <div className="min-w-0">
                     <div className="truncate font-medium">{provider.name}</div>
-                    <div className="truncate text-xs text-stone-500">{provider.baseUrl ?? provider.type}</div>
+                    <div className="truncate text-xs text-stone-500">
+                      {provider.baseUrl ?? provider.type} / {providerKeyLabel(provider, t)}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -208,6 +210,14 @@ function sectionLabel(section: EditableSection, t: ReturnType<typeof useI18n>["t
     case "mcp":
       return t("config.mcp");
   }
+}
+
+function providerKeyLabel(provider: ProviderConfig, t: ReturnType<typeof useI18n>["t"]): string {
+  if (provider.type === "local") {
+    return t("config.apiKeyNotRequired");
+  }
+
+  return provider.hasApiKey ? `${t("config.apiKeyConfigured")} ${provider.maskedApiKey ?? ""}`.trim() : t("config.apiKeyMissing");
 }
 
 async function saveSection(section: EditableSection, draft: string, jsonArrayError: string): Promise<void> {

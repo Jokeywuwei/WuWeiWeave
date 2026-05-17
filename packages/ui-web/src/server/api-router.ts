@@ -67,7 +67,7 @@ async function handleConfigRequest(
   const config = await daemon.config.getConfig();
 
   if (request.method === "GET" && segments.length === 2) {
-    return jsonResponse(config);
+    return jsonResponse(sanitizeConfigForResponse(config));
   }
 
   const section = segments[2];
@@ -82,7 +82,7 @@ async function handleConfigRequest(
   if (request.method === "GET" && section) {
     switch (section) {
       case "providers":
-        return jsonResponse(config.providers);
+        return jsonResponse(config.providers.map(sanitizeProviderForResponse));
       case "models":
         return jsonResponse(config.models);
       case "prompts":
@@ -102,12 +102,12 @@ async function handleConfigRequest(
 
   if (request.method === "POST" && section === "prompts") {
     const body = await readJsonBody<PromptConfig>(request);
-    return jsonResponse(await daemon.config.upsertPrompt(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertPrompt(body)));
   }
 
   if (request.method === "POST" && section === "providers") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertProvider>[0]>(request);
-    return jsonResponse(await daemon.config.upsertProvider(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertProvider(body)));
   }
 
   if (request.method === "POST" && section === "provider-test") {
@@ -117,22 +117,22 @@ async function handleConfigRequest(
 
   if (request.method === "POST" && section === "provider-routing") {
     const body = await readJsonBody<ProviderRoutingPolicy>(request);
-    return jsonResponse(await daemon.config.updateProviderRouting(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.updateProviderRouting(body)));
   }
 
   if (request.method === "POST" && section === "models") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertModel>[0]>(request);
-    return jsonResponse(await daemon.config.upsertModel(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertModel(body)));
   }
 
   if (request.method === "POST" && section === "tools") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertTool>[0]>(request);
-    return jsonResponse(await daemon.config.upsertTool(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertTool(body)));
   }
 
   if (request.method === "POST" && section === "mcp") {
     const body = await readJsonBody<Parameters<typeof daemon.config.upsertMcpServer>[0]>(request);
-    return jsonResponse(await daemon.config.upsertMcpServer(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.upsertMcpServer(body)));
   }
 
   if (request.method === "POST" && section === "mcp-discover") {
@@ -150,7 +150,7 @@ async function handleConfigRequest(
 
   if (request.method === "PUT" && section === "host") {
     const body = await readJsonBody<HostSettings>(request);
-    return jsonResponse(await daemon.config.updateHost(body));
+    return jsonResponse(sanitizeConfigForResponse(await daemon.config.updateHost(body)));
   }
 
   return jsonResponse({ message: "Unsupported config operation" }, 405);
@@ -325,6 +325,31 @@ async function handleRuntimeRequest(
 
 async function readJsonBody<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
+}
+
+function sanitizeConfigForResponse<T extends { providers: ProviderConfig[] }>(config: T): T {
+  return {
+    ...config,
+    providers: config.providers.map(sanitizeProviderForResponse)
+  };
+}
+
+function sanitizeProviderForResponse(provider: ProviderConfig): ProviderConfig {
+  const { apiKey: _apiKey, hasApiKey: _hasApiKey, maskedApiKey: _maskedApiKey, ...rest } = provider;
+  const apiKey = provider.apiKey?.trim();
+  return {
+    ...rest,
+    hasApiKey: Boolean(apiKey),
+    ...(apiKey ? { maskedApiKey: maskApiKey(apiKey) } : {})
+  };
+}
+
+function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 8) {
+    return "****";
+  }
+
+  return `${"*".repeat(8)}${apiKey.slice(-4)}`;
 }
 
 export function jsonResponse(data: unknown, status = 200): Response {

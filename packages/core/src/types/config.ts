@@ -7,7 +7,10 @@ export interface ProviderConfig {
   type: ProviderType;
   enabled: boolean;
   baseUrl?: string;
+  apiKey?: string;
   apiKeyEnv?: string;
+  hasApiKey?: boolean;
+  maskedApiKey?: string;
   defaultModelId?: string;
   costPerInput1k?: number;
   costPerOutput1k?: number;

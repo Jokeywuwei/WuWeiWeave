@@ -1,4 +1,4 @@
-import { RefreshCw, Save, TestTube2 } from "lucide-react";
+import { Eye, EyeOff, KeyRound, RefreshCw, Save, TestTube2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useI18n } from "../i18n";
@@ -75,6 +75,11 @@ export function ProvidersPage({ config, onRefresh }: ProvidersPageProps) {
             key={provider.id}
             provider={provider}
             models={config.models.filter((model) => model.providerId === provider.id)}
+            onSaveApiKey={async (apiKey) => {
+              await api.upsertProvider({ ...provider, apiKey });
+              setStatus(apiKey.trim().length > 0 ? t("providers.apiKeySaved") : t("providers.apiKeyCleared"));
+              await onRefresh();
+            }}
             onTest={async (modelId) => {
               const result = await api.testProvider({ providerId: provider.id, ...(modelId ? { modelId } : {}) });
               setStatus(result.ok ? `${provider.id}: ${result.content ?? t("common.ok")}` : result.error ?? t("providers.testFailed"));
@@ -187,13 +192,19 @@ function RoutingPanel({
 function ProviderCard({
   provider,
   models,
+  onSaveApiKey,
   onTest
 }: {
   provider: ProviderConfig;
   models: ModelConfig[];
+  onSaveApiKey: (apiKey: string) => Promise<void>;
   onTest: (modelId?: string) => Promise<void>;
 }) {
   const { t } = useI18n();
+  const [apiKeyDraft, setApiKeyDraft] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [savingApiKey, setSavingApiKey] = useState(false);
+  const canEditApiKey = provider.type !== "local";
 
   return (
     <div className="rounded border border-stone-200 bg-white">
@@ -206,6 +217,72 @@ function ProviderCard({
           <span className="rounded bg-stone-100 px-2 py-1 text-xs">{provider.enabled ? t("common.enabled") : t("common.disabled")}</span>
         </div>
       </div>
+      {canEditApiKey ? (
+        <div className="border-b border-stone-100 px-4 py-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 text-xs font-medium text-stone-600">
+              <KeyRound size={14} aria-hidden="true" />
+              {t("providers.apiKey")}
+            </div>
+            <div className="text-xs text-stone-500">
+              {provider.hasApiKey
+                ? `${t("providers.apiKeyConfigured")} ${provider.maskedApiKey ?? ""}`.trim()
+                : t("providers.apiKeyMissing")}
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+            <input
+              type={showApiKey ? "text" : "password"}
+              value={apiKeyDraft}
+              onChange={(event) => setApiKeyDraft(event.target.value)}
+              placeholder={provider.hasApiKey ? t("providers.apiKeyKeepPlaceholder") : t("providers.apiKeyPlaceholder")}
+              className="h-9 min-w-0 rounded border border-stone-300 px-3 text-sm"
+            />
+            <button
+              type="button"
+              title={showApiKey ? t("providers.hideApiKey") : t("providers.showApiKey")}
+              onClick={() => setShowApiKey((value) => !value)}
+              className="inline-flex h-9 items-center justify-center rounded border border-stone-300 px-3 text-sm hover:bg-stone-50"
+            >
+              {showApiKey ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+            </button>
+            <button
+              type="button"
+              disabled={savingApiKey || apiKeyDraft.trim().length === 0}
+              onClick={async () => {
+                setSavingApiKey(true);
+                try {
+                  await onSaveApiKey(apiKeyDraft);
+                  setApiKeyDraft("");
+                } finally {
+                  setSavingApiKey(false);
+                }
+              }}
+              className="inline-flex h-9 items-center gap-2 rounded border border-stone-300 px-3 text-sm hover:bg-stone-50 disabled:bg-stone-100"
+            >
+              <Save size={16} aria-hidden="true" />
+              {savingApiKey ? t("config.saving") : t("providers.saveApiKey")}
+            </button>
+            <button
+              type="button"
+              disabled={savingApiKey || !provider.hasApiKey}
+              onClick={async () => {
+                setSavingApiKey(true);
+                try {
+                  await onSaveApiKey("");
+                  setApiKeyDraft("");
+                } finally {
+                  setSavingApiKey(false);
+                }
+              }}
+              className="inline-flex h-9 items-center gap-2 rounded border border-stone-300 px-3 text-sm hover:bg-stone-50 disabled:bg-stone-100"
+            >
+              <Trash2 size={16} aria-hidden="true" />
+              {t("providers.clearApiKey")}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="divide-y divide-stone-100">
         {models.map((model) => (
           <div key={model.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
