@@ -220,7 +220,10 @@ export class ConfigManager {
       enabled: false,
       baseUrl: "https://api.openai.com/v1",
       apiKeyEnv: "OPENAI_API_KEY",
-      defaultModelId: "gpt-5.4"
+      defaultModelId: "gpt-5.4",
+      supportsTools: true,
+      supportsResponsesApi: false,
+      supportsWebsockets: false
     };
     const model: ModelConfig = {
       id: "local-planner",

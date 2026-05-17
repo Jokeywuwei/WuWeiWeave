@@ -12,6 +12,9 @@ export interface ProviderConfig {
   hasApiKey?: boolean;
   maskedApiKey?: string;
   defaultModelId?: string;
+  supportsTools?: boolean;
+  supportsResponsesApi?: boolean;
+  supportsWebsockets?: boolean;
   costPerInput1k?: number;
   costPerOutput1k?: number;
 }

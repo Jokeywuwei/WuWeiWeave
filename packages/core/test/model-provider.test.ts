@@ -1,5 +1,7 @@
+import { Type } from "@sinclair/typebox";
 import { afterEach, describe, expect, it } from "bun:test";
 import { ConfigManager, FileStore, ModelProviderRegistry } from "../src/index";
+import type { ToolDefinition } from "../src/index";
 
 const originalFetch = globalThis.fetch;
 
@@ -145,9 +147,61 @@ describe("ModelProviderRegistry", () => {
       expect(error instanceof Error ? error.message : String(error)).toContain("missing API key");
     }
   });
+
+  it("does not send tools or tool_choice when no tools are available", async () => {
+    const { config, prompt } = createMockOpenAiConfig({ apiKey: "direct-key" });
+    globalThis.fetch = createBodyAssertingFetch((body) => {
+      expect("tools" in body).toBe(false);
+      expect("tool_choice" in body).toBe(false);
+    }) as typeof fetch;
+
+    const result = await new ModelProviderRegistry().run({
+      config,
+      prompt,
+      messages: [{ role: "user", content: "plain chat" }],
+      tools: []
+    });
+
+    expect(result.content).toBe("mock provider ok");
+  });
+
+  it("sends tool_choice only when tools are non-empty", async () => {
+    const { config, prompt } = createMockOpenAiConfig({ apiKey: "direct-key" });
+    globalThis.fetch = createBodyAssertingFetch((body) => {
+      expect(Array.isArray(body.tools)).toBe(true);
+      expect((body.tools as unknown[]).length).toBe(1);
+      expect(body.tool_choice).toBe("auto");
+    }) as typeof fetch;
+
+    const result = await new ModelProviderRegistry().run({
+      config,
+      prompt,
+      messages: [{ role: "user", content: "use a tool" }],
+      tools: [createMockTool()]
+    });
+
+    expect(result.content).toBe("mock provider ok");
+  });
+
+  it("omits tools and tool_choice when provider disables tool support", async () => {
+    const { config, prompt } = createMockOpenAiConfig({ apiKey: "direct-key", supportsTools: false });
+    globalThis.fetch = createBodyAssertingFetch((body) => {
+      expect("tools" in body).toBe(false);
+      expect("tool_choice" in body).toBe(false);
+    }) as typeof fetch;
+
+    const result = await new ModelProviderRegistry().run({
+      config,
+      prompt,
+      messages: [{ role: "user", content: "provider without tools" }],
+      tools: [createMockTool()]
+    });
+
+    expect(result.content).toBe("mock provider ok");
+  });
 });
 
-function createMockOpenAiConfig(input: { apiKey?: string; apiKeyEnv?: string }) {
+function createMockOpenAiConfig(input: { apiKey?: string; apiKeyEnv?: string; supportsTools?: boolean }) {
   const store = new FileStore(".tmp/model-provider-test");
   const configManager = new ConfigManager(store);
   const config = configManager.createDefaultConfig();
@@ -166,7 +220,8 @@ function createMockOpenAiConfig(input: { apiKey?: string; apiKeyEnv?: string }) 
         enabled: true,
         baseUrl: "https://mock.local/v1",
         ...(input.apiKey !== undefined ? { apiKey: input.apiKey } : {}),
-        ...(input.apiKeyEnv !== undefined ? { apiKeyEnv: input.apiKeyEnv } : {})
+        ...(input.apiKeyEnv !== undefined ? { apiKeyEnv: input.apiKeyEnv } : {}),
+        ...(input.supportsTools !== undefined ? { supportsTools: input.supportsTools } : {})
       }
     ],
     models: [
@@ -188,24 +243,49 @@ function createMockOpenAiConfig(input: { apiKey?: string; apiKeyEnv?: string }) 
   };
 }
 
+function createBodyAssertingFetch(assertBody: (body: Record<string, unknown>) => void) {
+  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    expect(String(input)).toBe("https://mock.local/v1/chat/completions");
+    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer direct-key");
+    assertBody(JSON.parse(String(init?.body)) as Record<string, unknown>);
+    return createMockOpenAiResponse();
+  };
+}
+
 function createAuthAssertingFetch(expectedKey: string) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     expect(String(input)).toBe("https://mock.local/v1/chat/completions");
     expect((init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${expectedKey}`);
-    return new Response(
-      JSON.stringify({
-        choices: [
-          {
-            message: {
-              content: "mock provider ok"
-            }
+    return createMockOpenAiResponse();
+  };
+}
+
+function createMockOpenAiResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: "mock provider ok"
           }
-        ]
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+        }
+      ]
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    }
+  );
+}
+
+function createMockTool(): ToolDefinition {
+  return {
+    id: "mock.echo",
+    name: "Mock echo",
+    description: "Echo input for provider request tests.",
+    category: "mcp",
+    inputSchema: Type.Object({
+      value: Type.String()
+    })
   };
 }

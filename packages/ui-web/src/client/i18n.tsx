@@ -199,7 +199,10 @@ const translations = {
     "config.web": "Web",
     "config.runtimeImage": "运行镜像",
     "config.dockerNetwork": "Docker 网络",
-    "config.shellTools": "Shell 工具"
+    "config.shellTools": "Shell 工具",
+    "config.supportsTools": "支持工具调用",
+    "config.supportsResponsesApi": "支持 Responses API",
+    "config.supportsWebsockets": "支持 WebSocket"
   },
   en: {
     "app.subtitle": "Agent control plane",
@@ -391,7 +394,10 @@ const translations = {
     "config.web": "Web",
     "config.runtimeImage": "Runtime image",
     "config.dockerNetwork": "Docker network",
-    "config.shellTools": "Shell tools"
+    "config.shellTools": "Shell tools",
+    "config.supportsTools": "Supports tools",
+    "config.supportsResponsesApi": "Supports Responses API",
+    "config.supportsWebsockets": "Supports WebSocket"
   }
 } as const;
 

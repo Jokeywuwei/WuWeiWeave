@@ -204,6 +204,18 @@ function ProviderConfigCard({ provider, onRefresh }: { provider: ProviderConfig;
         </label>
         <TextField label="baseUrl" value={draft.baseUrl ?? ""} onChange={(value) => update({ baseUrl: value })} />
         <TextField label="apiKeyEnv" value={draft.apiKeyEnv ?? ""} onChange={(value) => update({ apiKeyEnv: value })} />
+        <label className="flex h-9 items-center gap-2 text-sm text-stone-700">
+          <input type="checkbox" checked={draft.supportsTools ?? true} onChange={(event) => update({ supportsTools: event.target.checked })} />
+          {t("config.supportsTools")}
+        </label>
+        <label className="flex h-9 items-center gap-2 text-sm text-stone-700">
+          <input type="checkbox" checked={draft.supportsResponsesApi ?? false} onChange={(event) => update({ supportsResponsesApi: event.target.checked })} />
+          {t("config.supportsResponsesApi")}
+        </label>
+        <label className="flex h-9 items-center gap-2 text-sm text-stone-700">
+          <input type="checkbox" checked={draft.supportsWebsockets ?? false} onChange={(event) => update({ supportsWebsockets: event.target.checked })} />
+          {t("config.supportsWebsockets")}
+        </label>
       </div>
       {draft.type !== "local" ? (
         <div className="border-t border-stone-100 p-4">

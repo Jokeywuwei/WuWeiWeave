@@ -61,6 +61,13 @@ interface OpenAiChatResponse {
   }>;
 }
 
+interface OpenAiChatRequestBody {
+  model: string;
+  messages: OpenAiChatMessage[];
+  tools?: Record<string, unknown>[];
+  tool_choice?: "auto";
+}
+
 export class ModelProviderRegistry {
   async run(request: ModelRunRequest): Promise<ModelRunResult> {
     const model = findModel(request.config, request.prompt.modelId);
@@ -137,12 +144,7 @@ async function runOpenAiCompatibleProvider(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: model.modelName ?? model.id,
-        messages: request.messages.map(toOpenAiMessage),
-        tools: request.tools.map(toOpenAiTool),
-        tool_choice: "auto"
-      })
+      body: JSON.stringify(buildOpenAiChatCompletionsBody(provider, model, request))
     });
   } catch (error) {
     throw new Error(
@@ -175,6 +177,25 @@ async function runOpenAiCompatibleProvider(
       )
     }
   };
+}
+
+function buildOpenAiChatCompletionsBody(
+  provider: ProviderConfig,
+  model: ModelConfig,
+  request: ModelRunRequest
+): OpenAiChatRequestBody {
+  const tools = provider.supportsTools === false ? [] : request.tools.map(toOpenAiTool);
+  const body: OpenAiChatRequestBody = {
+    model: model.modelName ?? model.id,
+    messages: request.messages.map(toOpenAiMessage)
+  };
+
+  if (tools.length > 0) {
+    body.tools = tools;
+    body.tool_choice = "auto";
+  }
+
+  return body;
 }
 
 export function resolveProviderApiKey(provider: ProviderConfig): string {
