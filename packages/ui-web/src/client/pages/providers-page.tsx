@@ -1,6 +1,7 @@
 import { RefreshCw, Save, TestTube2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { useI18n } from "../i18n";
 import type { ModelConfig, ProviderConfig, ProviderRoutingPolicy, SystemConfig } from "../types";
 
 interface ProvidersPageProps {
@@ -9,6 +10,7 @@ interface ProvidersPageProps {
 }
 
 export function ProvidersPage({ config, onRefresh }: ProvidersPageProps) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<string>();
   const [routing, setRouting] = useState<RoutingDraft>();
 
@@ -27,19 +29,19 @@ export function ProvidersPage({ config, onRefresh }: ProvidersPageProps) {
   }, [config]);
 
   if (!config) {
-    return <section className="rounded border border-stone-200 bg-white p-5 text-sm text-stone-600">Loading providers.</section>;
+    return <section className="rounded border border-stone-200 bg-white p-5 text-sm text-stone-600">{t("common.loadingProviders")}</section>;
   }
 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-950">Providers</h1>
-          <p className="mt-1 text-sm text-stone-600">Routing: {config.host.providerRouting.mode}</p>
+          <h1 className="text-xl font-semibold text-neutral-950">{t("providers.title")}</h1>
+          <p className="mt-1 text-sm text-stone-600">{t("providers.routing")}: {config.host.providerRouting.mode}</p>
         </div>
         <button type="button" onClick={() => void onRefresh()} className="inline-flex h-9 items-center gap-2 rounded border border-stone-300 bg-white px-3 text-sm">
           <RefreshCw size={16} aria-hidden="true" />
-          Refresh
+          {t("common.refresh")}
         </button>
       </div>
       {status ? <div className="rounded border border-stone-200 bg-white px-4 py-3 text-sm">{status}</div> : null}
@@ -62,7 +64,7 @@ export function ProvidersPage({ config, onRefresh }: ProvidersPageProps) {
               preferToolModels: routing.preferToolModels
             };
             await api.updateProviderRouting(next);
-            setStatus("Provider routing saved.");
+            setStatus(t("providers.routingSaved"));
             await onRefresh();
           }}
         />
@@ -75,7 +77,7 @@ export function ProvidersPage({ config, onRefresh }: ProvidersPageProps) {
             models={config.models.filter((model) => model.providerId === provider.id)}
             onTest={async (modelId) => {
               const result = await api.testProvider({ providerId: provider.id, ...(modelId ? { modelId } : {}) });
-              setStatus(result.ok ? `${provider.id}: ${result.content ?? "ok"}` : result.error ?? "Provider test failed");
+              setStatus(result.ok ? `${provider.id}: ${result.content ?? t("common.ok")}` : result.error ?? t("providers.testFailed"));
             }}
           />
         ))}
@@ -105,13 +107,14 @@ function RoutingPanel({
   onChange: (routing: RoutingDraft) => void;
   onSave: () => Promise<void>;
 }) {
+  const { t } = useI18n();
   const providerModels = models.filter((model) => model.providerId === routing.defaultProviderId);
 
   return (
     <div className="rounded border border-stone-200 bg-white p-4">
       <div className="grid gap-3 lg:grid-cols-5">
         <label className="text-xs font-medium text-stone-600">
-          Mode
+          {t("providers.mode")}
           <select
             value={routing.mode}
             onChange={(event) => onChange({ ...routing, mode: event.target.value as ProviderRoutingPolicy["mode"] })}
@@ -123,7 +126,7 @@ function RoutingPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-stone-600">
-          Default provider
+          {t("providers.defaultProvider")}
           <select
             value={routing.defaultProviderId}
             onChange={(event) => {
@@ -141,7 +144,7 @@ function RoutingPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-stone-600">
-          Default model
+          {t("providers.defaultModel")}
           <select
             value={routing.defaultModelId}
             onChange={(event) => onChange({ ...routing, defaultModelId: event.target.value })}
@@ -155,7 +158,7 @@ function RoutingPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-stone-600">
-          Fallback providers
+          {t("providers.fallbackProviders")}
           <input
             value={routing.fallbackProviderIds}
             onChange={(event) => onChange({ ...routing, fallbackProviderIds: event.target.value })}
@@ -169,11 +172,11 @@ function RoutingPanel({
               checked={routing.preferToolModels}
               onChange={(event) => onChange({ ...routing, preferToolModels: event.target.checked })}
             />
-            tools
+            {t("providers.tools")}
           </label>
           <button type="button" onClick={() => void onSave()} className="inline-flex h-9 items-center gap-2 rounded border border-stone-300 bg-white px-3 text-sm hover:bg-stone-50">
             <Save size={16} aria-hidden="true" />
-            Save
+            {t("providers.save")}
           </button>
         </div>
       </div>
@@ -190,6 +193,8 @@ function ProviderCard({
   models: ModelConfig[];
   onTest: (modelId?: string) => Promise<void>;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="rounded border border-stone-200 bg-white">
       <div className="border-b border-stone-200 px-4 py-3">
@@ -198,7 +203,7 @@ function ProviderCard({
             <h2 className="text-sm font-semibold">{provider.name}</h2>
             <p className="mt-1 text-xs text-stone-500">{provider.baseUrl ?? provider.type}</p>
           </div>
-          <span className="rounded bg-stone-100 px-2 py-1 text-xs">{provider.enabled ? "enabled" : "disabled"}</span>
+          <span className="rounded bg-stone-100 px-2 py-1 text-xs">{provider.enabled ? t("common.enabled") : t("common.disabled")}</span>
         </div>
       </div>
       <div className="divide-y divide-stone-100">
@@ -207,12 +212,12 @@ function ProviderCard({
             <div className="min-w-0">
               <div className="truncate font-medium">{model.displayName}</div>
               <div className="truncate text-xs text-stone-500">
-                {model.modelName ?? model.id} · ctx {model.contextWindow} · tools {model.supportsTools ? "yes" : "no"}
+                {model.modelName ?? model.id} / {t("providers.ctx")} {model.contextWindow} / {t("providers.tools")} {model.supportsTools ? t("common.yes") : t("common.no")}
               </div>
             </div>
             <button type="button" onClick={() => void onTest(model.id)} className="inline-flex h-8 items-center gap-2 rounded border border-stone-300 px-2 text-xs hover:bg-stone-50">
               <TestTube2 size={14} aria-hidden="true" />
-              Test
+              {t("providers.test")}
             </button>
           </div>
         ))}

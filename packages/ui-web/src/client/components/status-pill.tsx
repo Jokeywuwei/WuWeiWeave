@@ -1,3 +1,5 @@
+import { translateStatus, useI18n } from "../i18n";
+
 interface StatusPillProps {
   status: string;
 }
@@ -15,9 +17,11 @@ const statusClasses: Record<string, string> = {
 };
 
 export function StatusPill({ status }: StatusPillProps) {
+  const { t } = useI18n();
+
   return (
     <span className={`inline-flex h-6 items-center rounded px-2 text-xs font-medium ring-1 ${statusClasses[status] ?? "bg-slate-100 text-slate-700 ring-slate-200"}`}>
-      {status}
+      {translateStatus(status, t)}
     </span>
   );
 }

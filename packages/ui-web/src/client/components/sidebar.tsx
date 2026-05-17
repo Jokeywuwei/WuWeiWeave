@@ -1,4 +1,5 @@
 import { Activity, BarChart3, BrainCircuit, CalendarClock, Database, LayoutDashboard, Settings, Target } from "lucide-react";
+import { useI18n, type TranslationKey } from "../i18n";
 import type { ViewKey } from "../types";
 
 interface SidebarProps {
@@ -6,17 +7,19 @@ interface SidebarProps {
   onChange: (view: ViewKey) => void;
 }
 
-const items: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard }> = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "challenges", label: "Challenges", icon: Target },
-  { key: "runtime", label: "Runtime", icon: Activity },
-  { key: "observability", label: "Observability", icon: BarChart3 },
-  { key: "providers", label: "Providers", icon: BrainCircuit },
-  { key: "scheduler", label: "Scheduler", icon: CalendarClock },
-  { key: "config", label: "Config", icon: Settings }
+const items: Array<{ key: ViewKey; labelKey: TranslationKey; icon: typeof LayoutDashboard }> = [
+  { key: "dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { key: "challenges", labelKey: "nav.challenges", icon: Target },
+  { key: "runtime", labelKey: "nav.runtime", icon: Activity },
+  { key: "observability", labelKey: "nav.observability", icon: BarChart3 },
+  { key: "providers", labelKey: "nav.providers", icon: BrainCircuit },
+  { key: "scheduler", labelKey: "nav.scheduler", icon: CalendarClock },
+  { key: "config", labelKey: "nav.config", icon: Settings }
 ];
 
 export function Sidebar({ active, onChange }: SidebarProps) {
+  const { language, setLanguage, t } = useI18n();
+
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-stone-200 bg-neutral-950 text-stone-100">
       <div className="border-b border-neutral-800 px-5 py-4">
@@ -26,7 +29,7 @@ export function Sidebar({ active, onChange }: SidebarProps) {
           </div>
           <div>
             <div className="text-sm font-semibold">WuWeiWeave</div>
-            <div className="text-xs text-stone-400">Agent control plane</div>
+            <div className="text-xs text-stone-400">{t("app.subtitle")}</div>
           </div>
         </div>
       </div>
@@ -34,10 +37,11 @@ export function Sidebar({ active, onChange }: SidebarProps) {
         {items.map((item) => {
           const Icon = item.icon;
           const selected = active === item.key;
+          const label = t(item.labelKey);
           return (
             <button
               key={item.key}
-              title={item.label}
+              title={label}
               type="button"
               onClick={() => onChange(item.key)}
               className={`flex h-10 items-center gap-3 rounded px-3 text-left text-sm transition ${
@@ -45,11 +49,27 @@ export function Sidebar({ active, onChange }: SidebarProps) {
               }`}
             >
               <Icon size={17} aria-hidden="true" />
-              <span>{item.label}</span>
+              <span>{label}</span>
             </button>
           );
         })}
       </nav>
+      <div className="border-t border-neutral-800 p-3">
+        <div className="grid grid-cols-2 rounded border border-neutral-700 p-1">
+          {(["zh", "en"] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setLanguage(item)}
+              className={`h-8 rounded text-xs ${
+                language === item ? "bg-stone-100 text-neutral-950" : "text-stone-300 hover:bg-neutral-800"
+              }`}
+            >
+              {t(item === "zh" ? "language.zh" : "language.en")}
+            </button>
+          ))}
+        </div>
+      </div>
     </aside>
   );
 }

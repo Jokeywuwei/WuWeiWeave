@@ -1,6 +1,6 @@
 {
   "name": "wuweiweave",
-  "version": "0.155",
+  "version": "0.156",
   "private": true,
   "type": "module",
   "workspaces": [

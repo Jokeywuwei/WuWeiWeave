@@ -8,9 +8,11 @@ import { ObservabilityPage } from "./pages/observability-page";
 import { ProvidersPage } from "./pages/providers-page";
 import { RuntimePage } from "./pages/runtime-page";
 import { SchedulerPage } from "./pages/scheduler-page";
+import { useI18n } from "./i18n";
 import type { ChallengeState, DashboardState, ObservabilitySnapshot, SolverSession, SystemConfig, ViewKey } from "./types";
 
 export function App() {
+  const { t } = useI18n();
   const [view, setView] = useState<ViewKey>("dashboard");
   const [dashboard, setDashboard] = useState<DashboardState>();
   const [observability, setObservability] = useState<ObservabilitySnapshot>();
@@ -37,9 +39,9 @@ export function App() {
       setSelectedChallengeId((current) => current ?? nextChallenges[0]?.id);
       setError(undefined);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Refresh failed");
+      setError(caught instanceof Error ? caught.message : t("common.refreshFailed"));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void refresh();

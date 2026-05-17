@@ -39,6 +39,8 @@ The default web control plane listens at:
 http://127.0.0.1:3217
 ```
 
+中文使用指南见 [`docs/usage.zh-CN.md`](docs/usage.zh-CN.md)。
+
 Initialize and inspect persisted state:
 
 ```bash

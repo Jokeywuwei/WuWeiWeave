@@ -2,6 +2,7 @@ import { Play, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { StatusPill } from "../components/status-pill";
+import { translateStatus, useI18n } from "../i18n";
 import type { AgentMessage, ChallengeState, SolverSession } from "../types";
 
 interface RuntimePageProps {
@@ -25,7 +26,8 @@ export function RuntimePage({
   onArchive,
   onRefresh
 }: RuntimePageProps) {
-  const [task, setTask] = useState("Recon seed challenge and propose first attack path");
+  const { t } = useI18n();
+  const [task, setTask] = useState(() => t("runtime.defaultTask"));
   const [promptName, setPromptName] = useState("solver-default");
   const [challengeId, setChallengeId] = useState("");
   const [runtimeMode, setRuntimeMode] = useState<"local" | "docker">("local");
@@ -56,7 +58,7 @@ export function RuntimePage({
   return (
     <section className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
       <aside className="rounded border border-stone-200 bg-white p-4">
-        <h1 className="text-base font-semibold">Start Solver</h1>
+        <h1 className="text-base font-semibold">{t("runtime.startSolver")}</h1>
         <div className="mt-4 space-y-3">
           <textarea
             value={task}
@@ -73,7 +75,7 @@ export function RuntimePage({
             onChange={(event) => setChallengeId(event.target.value)}
             className="h-9 w-full rounded border border-stone-300 px-3 text-sm"
           >
-            <option value="">No challenge</option>
+            <option value="">{t("runtime.noChallenge")}</option>
             {challenges.map((challenge) => (
               <option key={challenge.id} value={challenge.id}>
                 {challenge.title}
@@ -89,13 +91,13 @@ export function RuntimePage({
                 onClick={() => setRuntimeMode(mode)}
                 className={`h-8 rounded text-sm ${runtimeMode === mode ? "bg-neutral-950 text-white" : "text-stone-700 hover:bg-stone-50"}`}
               >
-                {mode}
+                {mode === "local" ? t("runtime.local") : t("runtime.docker")}
               </button>
             ))}
           </div>
           <button
             type="button"
-            title="Start solver"
+            title={t("runtime.startSolver")}
             onClick={() =>
               onStart({
                 task,
@@ -107,7 +109,7 @@ export function RuntimePage({
             className="inline-flex h-9 items-center gap-2 rounded bg-neutral-950 px-3 text-sm font-medium text-white"
           >
             <Play size={16} aria-hidden="true" />
-            Start
+            {t("runtime.start")}
           </button>
         </div>
       </aside>
@@ -116,44 +118,44 @@ export function RuntimePage({
       <div className="rounded border border-stone-200 bg-white">
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
           <div>
-            <h2 className="text-base font-semibold">Solver Runtime</h2>
-            <p className="mt-1 text-xs text-stone-500">SSE live count: {liveCount}</p>
+            <h2 className="text-base font-semibold">{t("runtime.solverRuntime")}</h2>
+            <p className="mt-1 text-xs text-stone-500">{t("runtime.liveCount")}: {liveCount}</p>
           </div>
           <button
-            title="Refresh"
+            title={t("common.refresh")}
             type="button"
             onClick={onRefresh}
             className="inline-flex h-8 items-center gap-2 rounded border border-stone-300 px-2 text-sm hover:bg-stone-50"
           >
             <RefreshCw size={15} aria-hidden="true" />
-            Refresh
+            {t("common.refresh")}
           </button>
           <button
-            title="Supervise"
+            title={t("runtime.supervise")}
             type="button"
             onClick={() => void onSupervise(false)}
             className="inline-flex h-8 items-center gap-2 rounded border border-stone-300 px-2 text-sm hover:bg-stone-50"
           >
-            Observe
+            {t("runtime.observe")}
           </button>
           <button
-            title="Apply supervision actions"
+            title={t("runtime.applySupervision")}
             type="button"
             onClick={() => void onSupervise(true)}
             className="inline-flex h-8 items-center gap-2 rounded bg-neutral-950 px-2 text-sm text-white"
           >
-            Apply
+            {t("runtime.apply")}
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-left text-sm">
             <thead className="bg-stone-50 text-xs uppercase tracking-normal text-stone-500">
               <tr>
-                <th className="w-[24%] px-4 py-3">ID</th>
-                <th className="w-[34%] px-4 py-3">Task</th>
-                <th className="w-[12%] px-4 py-3">Status</th>
-                <th className="w-[12%] px-4 py-3">Mode</th>
-                <th className="w-[18%] px-4 py-3">Observer</th>
+                <th className="w-[24%] px-4 py-3">{t("runtime.id")}</th>
+                <th className="w-[34%] px-4 py-3">{t("runtime.task")}</th>
+                <th className="w-[12%] px-4 py-3">{t("runtime.status")}</th>
+                <th className="w-[12%] px-4 py-3">{t("runtime.mode")}</th>
+                <th className="w-[18%] px-4 py-3">{t("runtime.observer")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -168,7 +170,7 @@ export function RuntimePage({
                   <td className="px-4 py-3">
                     <StatusPill status={solver.status} />
                   </td>
-                  <td className="px-4 py-3 text-stone-600">{solver.runtimeMode}</td>
+                  <td className="px-4 py-3 text-stone-600">{solver.runtimeMode === "local" ? t("runtime.local") : t("runtime.docker")}</td>
                   <td className="truncate px-4 py-3 text-xs text-stone-500">{solver.observer.lastSignal}</td>
                 </tr>
               ))}
@@ -178,8 +180,8 @@ export function RuntimePage({
       </div>
       <div className="rounded border border-stone-200 bg-white">
         <div className="border-b border-stone-200 px-4 py-3">
-          <h2 className="text-base font-semibold">Solver Detail</h2>
-          <p className="mt-1 truncate font-mono text-xs text-stone-500">{selectedSolverId ?? "No solver selected"}</p>
+          <h2 className="text-base font-semibold">{t("runtime.detail")}</h2>
+          <p className="mt-1 truncate font-mono text-xs text-stone-500">{selectedSolverId ?? t("runtime.noSolverSelected")}</p>
           {selectedSolverId ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -187,33 +189,33 @@ export function RuntimePage({
                 onClick={() => void onStop(selectedSolverId)}
                 className="h-8 rounded border border-stone-300 px-2 text-xs hover:bg-stone-50"
               >
-                Stop
+                {t("runtime.stop")}
               </button>
               <button
                 type="button"
                 onClick={() => void onResume(selectedSolverId)}
                 className="h-8 rounded border border-stone-300 px-2 text-xs hover:bg-stone-50"
               >
-                Resume
+                {t("runtime.resume")}
               </button>
               <button
                 type="button"
                 onClick={() => void onArchive(selectedSolverId)}
                 className="h-8 rounded border border-stone-300 px-2 text-xs hover:bg-stone-50"
               >
-                Archive
+                {t("runtime.archive")}
               </button>
             </div>
           ) : null}
         </div>
         <div className="max-h-96 overflow-auto divide-y divide-stone-100">
           {messages.length === 0 ? (
-            <div className="px-4 py-8 text-sm text-stone-500">No messages yet.</div>
+            <div className="px-4 py-8 text-sm text-stone-500">{t("runtime.noMessages")}</div>
           ) : (
             messages.map((message) => (
               <div key={message.id} className="p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700">{message.role}</span>
+                  <span className="rounded bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700">{translateStatus(message.role, t)}</span>
                   <span className="text-xs text-stone-500">{new Date(message.createdAt).toLocaleString()}</span>
                 </div>
                 <pre className="mt-3 whitespace-pre-wrap break-words rounded bg-neutral-950 p-3 text-xs leading-5 text-stone-100">
